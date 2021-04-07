@@ -1,4 +1,4 @@
-## java-call-graph
+## java-callgraph
 A demo app show you how to generate a java call graph.
 
 ### setup

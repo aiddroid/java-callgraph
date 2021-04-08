@@ -1,15 +1,32 @@
 ## java-callgraph
-A demo app show you how to generate a java call graph.
+A tool to help you generate java call graph.
 
-### setup
-- import project to netbeans
-- update your own configure in src/main/resources/*.cfg
-- "Build" with dependencies
+### usage
+```
+usage: java -jar java-callgraph-1.0-SNAPSHOT-jar-with-dependencies.jar
+       -s <arg> [-l <arg>] [-k <arg>] [-o <arg>] [-h]
 
+========================================
+========= java-callgraph 1.0 ===========
+========================================
+ -s,--src <arg>      source code dirs [required]
+ -l,--lib <arg>      library dirs
+ -k,--skip <arg>     skip patterns
+ -o,--output <arg>   doT file output path
+ -h,--help           show help info
+========================================
+```
 
 ### run
 ```
-java -jar java-call-graph-1.0-SNAPSHOT-jar-with-dependencies.jar
+#set single source code folder
+java -jar java-callgraph-1.0-SNAPSHOT-jar-with-dependencies.jar -s "fake/src/main/java"
+
+#set mutiple source code folder
+java -jar java-callgraph-1.0-SNAPSHOT-jar-with-dependencies.jar -s "fake1/src/main/java" -s "fake2/src/main/java"
+
+#set library folder
+java -jar java-callgraph-1.0-SNAPSHOT-jar-with-dependencies.jar -s "fake/src/main/java" [-l YOUR-MAVEN-LIBRARY -l YOU-JDK-LIBRARY]
 ```
 
 ### call graph

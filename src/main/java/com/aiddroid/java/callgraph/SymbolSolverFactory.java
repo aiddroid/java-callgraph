@@ -22,22 +22,6 @@ public class SymbolSolverFactory {
     private static Logger logger = LoggerFactory.getLogger(SymbolSolverFactory.class);
 
     /**
-     * 构造方法
-     * @param srcCfg
-     * @param libCfg
-     * @return 
-     */
-    public static JavaSymbolSolver getJavaSymbolSolverFromConfig(String srcCfg, String libCfg) {
-        List<String> srcPaths = Utils.getLinesFrom(srcCfg);
-        List<String> libPaths = Utils.getLinesFrom(libCfg);
-        return getJavaSymbolSolver(srcPaths, libPaths);
-    }
-
-    public static JavaSymbolSolver getJavaSymbolSolverByDefault() {
-        return getJavaSymbolSolverFromConfig(Utils.SRC_CFG, Utils.LIB_CFG);
-    }
-
-    /**
      * 获取符号推理器，以便获取某个类的具体来源
      * @param srcPaths
      * @param libPaths

@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * 方法调用提取类
@@ -27,37 +28,31 @@ import java.util.Map;
 public class MethodCallExtractor {
 
     private static Logger logger = LoggerFactory.getLogger(MethodCallExtractor.class);
+    
+    private Settings settings;
 
-    public static void main(String[] args) {
-        MethodCallExtractor extractor = new MethodCallExtractor();
-        Map<String, List<String>> methodCallRelation = extractor.getMethodCallRelationByDefault();
-        Utils.printMap(methodCallRelation);
+    /**
+     * 构造方法
+     * @param settings 
+     */
+    public MethodCallExtractor(Settings settings) {
+        this.settings = settings;
     }
-
+    
     /**
      * 获取默认情况下，方法调用关系
      * @return 
      */
     public Map<String, List<String>> getMethodCallRelationByDefault() {
         logger.info("从resources目录下配置文件定义的扫描目录开始扫描代码，分析方法调用关系...");
-        List<String> srcPaths = Utils.getLinesFrom(Utils.SRC_CFG);
-        List<String> libPaths = Utils.getLinesFrom(Utils.LIB_CFG);
-        return getMethodCallRelation(srcPaths, libPaths);
-    }
-
-    /**
-     * 获取方法调用关系
-     *
-     * @param srcPath
-     * @param libPath
-     * @return 定义的方法->依赖的方法列表
-     */
-    public Map<String, List<String>> getMethodCallRelation(String srcPath, String libPath) {
-        return getMethodCallRelation(Utils.makeListFromOneElement(srcPath), Utils.makeListFromOneElement(libPath));
+        List<String> srcPaths = settings.getSrcDirs();
+        List<String> libPaths = settings.getLibDirs();
+        List<Pattern> skipPatterns = settings.getSkipPatterns();
+        return getMethodCallRelation(srcPaths, libPaths, skipPatterns);
     }
 
     // 获取调用关系
-    public Map<String, List<String>> getMethodCallRelation(List<String> srcPaths, List<String> libPaths) {
+    public Map<String, List<String>> getMethodCallRelation(List<String> srcPaths, List<String> libPaths, List<Pattern> skipPatterns) {
         // 从src和lib目录下解析出符号
         JavaSymbolSolver symbolSolver = SymbolSolverFactory.getJavaSymbolSolver(srcPaths, libPaths);
         JavaParser.getStaticConfiguration().setSymbolResolver(symbolSolver);
@@ -70,7 +65,7 @@ public class MethodCallExtractor {
             String javaFile = javaFiles.get(i);
             logger.debug("{}/{} processing: {}", i, javaFileNum, javaFile);
             // 解析.java文件中的调用关系
-            extract(javaFile, callerCallees);
+            extract(javaFile, callerCallees, skipPatterns);
         }
         return callerCallees;
     }
@@ -81,7 +76,7 @@ public class MethodCallExtractor {
      * @param javaFile
      * @param callerCallees 
      */
-    private void extract(String javaFile, Map<String, List<String>> callerCallees) {
+    private void extract(String javaFile, Map<String, List<String>> callerCallees, List<Pattern> skipPatterns) {
         logger.info("Start parsing " + javaFile);
         
         CompilationUnit cu = null;
@@ -97,7 +92,7 @@ public class MethodCallExtractor {
             List<String> curCallees = new ArrayList<>();
             
             // 对每个方法声明内容进行遍历，查找内部调用的其他方法
-            methodDeclaration.accept(new MethodCallVisitor(), curCallees);
+            methodDeclaration.accept(new MethodCallVisitor(skipPatterns), curCallees);
             String caller;
             try {
                 caller = methodDeclaration.resolve().getQualifiedSignature();
@@ -108,10 +103,13 @@ public class MethodCallExtractor {
             assert caller != null;
             
             // 如果map中还没有key，则添加key
-            if (!callerCallees.containsKey(caller)) {
+            if (!callerCallees.containsKey(caller) && !Utils.shouldSkip(caller, skipPatterns)) {
                 callerCallees.put(caller, new ArrayList<>());
             }
-            callerCallees.get(caller).addAll(curCallees);
+            
+            if (!Utils.shouldSkip(caller, skipPatterns)) {
+                callerCallees.get(caller).addAll(curCallees);
+            }
             
             logger.info("caller:" + caller);
             logger.info("callerCallees:" + callerCallees);
@@ -119,10 +117,20 @@ public class MethodCallExtractor {
         
         logger.info("End parsing " + javaFile);
     }
-
-
+    
+    
     // 遍历源码文件时，只关注方法调用的Visitor， 然后提取存放到第二个参数collector中
     private static class MethodCallVisitor extends VoidVisitorAdapter<List<String>> {
+        
+        private List<Pattern> skipPatterns = new ArrayList<Pattern>();
+
+        public MethodCallVisitor(List<Pattern> skipPatterns) {
+            if (skipPatterns != null) {
+                this.skipPatterns = skipPatterns;
+            }
+        }
+        
+        
         @Override
         public void visit(MethodCallExpr n, List<String> collector) {
             // 提取方法调用
@@ -131,8 +139,14 @@ public class MethodCallExtractor {
                 resolvedMethodDeclaration = n.resolve();
                 // 仅关注提供src目录的工程代码
                 // resolvedMethodDeclaration.get
-                if (resolvedMethodDeclaration instanceof JavaParserMethodDeclaration) {
-                    collector.add(n.resolve().getQualifiedSignature());
+                String signature = n.resolve().getQualifiedSignature();
+                if (!Utils.shouldSkip(signature, skipPatterns)) {
+                    if (resolvedMethodDeclaration instanceof JavaParserMethodDeclaration) {
+                        collector.add(signature);
+                    }
+
+                    // 获取方法调用
+                    logger.info("resolvedMethodDeclaration:" + n.resolve().getQualifiedSignature());
                 }
             } catch (Exception e) {
                 logger.error("Line {}, {} cannot resolve some symbol, because {}",

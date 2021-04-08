@@ -6,6 +6,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -13,11 +14,6 @@ import java.util.stream.Collectors;
  * @author allen
  */
 public class Utils {
-
-    public static String SRC_CFG = "src.cfg";
-    public static String LIB_CFG = "lib.cfg";
-    public static String SKIP_CFG = "skip.cfg";
-    public static String OUTPUT_DIR = "output";
 
     public static void printMap(Map<String, List<String>> callerCallees) {
         callerCallees.entrySet().stream().filter(t -> !t.getValue().isEmpty())
@@ -96,29 +92,42 @@ public class Utils {
     }
 
     /**
-     * 写入行数据到文件
-     * @param lines
-     * @param fileName 
+     * 移除非法字符
+     * @param s
+     * @return 
      */
-    public static void writeLinesTo(List<String> lines, String fileName) {
-        try (BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(OUTPUT_DIR + "/" + removeIllegalChar(fileName)))) {
-            for (String line : lines) {
-                bufferedWriter.write(line + "\n");
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public static String removeIllegalChar(String s){
+        return s.replaceAll("[^a-zA-Z0-9]", "_");
     }
 
-    public static String removeIllegalChar(String fileName){
-        return fileName.replaceAll("[^a-zA-Z0-9\\.\\-]", "_");
-    }
-
+    /**
+     * 单元素转换成列表
+     * @param <T>
+     * @param object
+     * @return 
+     */
     public static <T> List<T> makeListFromOneElement(T object) {
         ArrayList<T> list = new ArrayList<>();
         if (object != null) {
             list.add(object);
         }
         return list;
+    }
+    
+    
+     /**
+     * 判断是否需要过滤
+     * @param s
+     * @param skipPatterns
+     * @return 
+     */
+    public static boolean shouldSkip(String s, List<Pattern> skipPatterns) {
+        for (Pattern skipPattern : skipPatterns) {
+            if (skipPattern.matcher(s).matches()) {
+                return true;
+            }
+        }
+        
+        return false;
     }
 }

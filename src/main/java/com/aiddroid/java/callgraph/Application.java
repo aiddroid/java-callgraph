@@ -1,10 +1,12 @@
 package com.aiddroid.java.callgraph;
 
+import java.io.File;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.io.FileUtils;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
@@ -27,8 +29,12 @@ public class Application {
      * @param args 
      */
     public static void main(String[] args) {
+        // 初始化配置
+        Settings settings = new Settings();
+        settings.initFromCmdArgs(args);
+        
         // 获取方法调用关系
-        MethodCallExtractor extractor = new MethodCallExtractor();
+        MethodCallExtractor extractor = new MethodCallExtractor(settings);
         Map<String, List<String>> methodCallRelation = extractor.getMethodCallRelationByDefault();
         
         // 声明有向图
@@ -46,20 +52,36 @@ public class Application {
             }
         }
         
-        System.out.println("directedGraph:" + directedGraph + "\n");
-        System.out.println("View doT graph below via https://edotor.net/ :" + "\n");
-        System.out.println(toDoT(directedGraph));
+        logger.info("directedGraph:" + directedGraph + "\n");
+        logger.info("View doT graph below via https://edotor.net/ :" + "\n");
+        
+        String doT = toDoT(directedGraph);
+        logger.info(doT);
+        
+        // 获取output配置并判断是否需要保存doT到文件
+        String outputFile = settings.getOutput();
+        if (outputFile != null) {
+            try {
+                FileUtils.writeStringToFile(new File(outputFile), doT, "UTF-8", true);
+                logger.info("doT image saved to " + outputFile);
+            } catch (Exception e) {
+                logger.error("write doT error, " + e.getMessage());
+            }
+        }
     }
     
     /**
-     * 绘制doT图形
+     * 转换为doT
      * @param directedGraph
      * @return 
      */
     public static String toDoT(Graph<String, DefaultEdge> directedGraph) {
         DOTExporter<String, DefaultEdge> exporter = new DOTExporter<>(v -> {
-            return v.replaceAll("[^a-zA-Z0-9]", "_");
+            // 替换掉特殊字符
+            return Utils.removeIllegalChar(v);
         });
+        
+        // 为节点添加label
         exporter.setVertexAttributeProvider((v) -> {
             Map<String, Attribute> map = new LinkedHashMap<>();
             map.put("label", DefaultAttribute.createAttribute(v.toString()));

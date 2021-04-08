@@ -79,7 +79,9 @@ public class Utils {
         
         try {
             File file = getFileInResources(fileName);
-            BufferedReader bufferedReader = new BufferedReader(new FileReader(file));
+            // BufferedReader bufferedReader = new BufferedReader(new FileReader(file));
+            InputStream inputStream = Utils.class.getClassLoader().getResourceAsStream(fileName);
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
             while (null != (line = bufferedReader.readLine())) {
                 lines.add(line.trim());
             }

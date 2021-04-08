@@ -4,16 +4,16 @@ A demo app show you how to generate a java call graph.
 ### setup
 - import project to netbeans
 - update your own configure in src/main/resources/*.cfg
-- "Build Project"
+- "Build" with dependencies
 
 
 ### run
 ```
-java -jar java-callgraph-1.0-SNAPSHOT.jar
+java -jar java-call-graph-1.0-SNAPSHOT-jar-with-dependencies.jar
 ```
 
 ### call graph
-- view doT graph below via https://edotor.net/
+- View doT graph below via https://edotor.net/
 ```
 strict digraph G {
   com_test_StubImpl_subString_java_lang_String_ [ label="com.test.StubImpl.subString(java.lang.String)" ];

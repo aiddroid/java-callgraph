@@ -13,10 +13,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 符号解析工厂类
+ * @author allen
+ */
 public class SymbolSolverFactory {
 
     private static Logger logger = LoggerFactory.getLogger(SymbolSolverFactory.class);
 
+    /**
+     * 构造方法
+     * @param srcCfg
+     * @param libCfg
+     * @return 
+     */
     public static JavaSymbolSolver getJavaSymbolSolverFromConfig(String srcCfg, String libCfg) {
         List<String> srcPaths = Utils.getLinesFrom(srcCfg);
         List<String> libPaths = Utils.getLinesFrom(libCfg);
